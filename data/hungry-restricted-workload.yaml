@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-deployment
+  labels:
+    app: workload
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workload
+  template:
+    metadata:
+      labels:
+        app: workload
+    spec:
+      runtimeClassName: kata
+      containers:
+      - name: workload
+        image: quay.io/c3d/workload
+        env:
+        - name: CPU
+          value: "5"
+        - name: MEMORY
+          value: "0"
+        - name: INCREMENT
+          value: "250"
+      resources:
+        requests:
+          memory: 512Mi
+        limits:
+          memory: 1024Mi

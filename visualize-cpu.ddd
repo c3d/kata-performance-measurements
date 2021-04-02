@@ -1,0 +1,343 @@
+// ****************************************************************************
+//  visualize.ddd                                           KataMetrics project
+// ****************************************************************************
+//
+//   File Description:
+//
+//     Present the data collected about CPU and memory overhead in Kata
+//     and in OpenShift using Tao3D
+//
+//     You can find Tao3D here: https://tao3d.sourceforge.net
+//     It is unlikely to work in the present state, unfortunately.
+//
+//
+//
+//
+// ****************************************************************************
+//   (C) 2021 Christophe de Dinechin <christophe@dinechin.org>
+//   This software is licensed under the GNU General Public License v3
+// ****************************************************************************
+//   This file is part of KataMetrics.
+//
+//   KataMetrics is free software: you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation, either version 3 of the License, or
+//   (at your option) any later version.
+//
+//   KataMetrics is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with KataMetrics.  If not, see <https://www.gnu.org/licenses/>.
+// ****************************************************************************
+
+import Slides
+import Animate
+
+
+// ============================================================================
+//
+//    Files to present (Title, File name)
+//
+// ============================================================================
+
+// No memory constraint whatsoever, a simple NFS volume mount to write data
+range_x 1000, 1, 50, "Iterations"
+show_file "runc, 10% CPU", "cpu-runc-10pct", "data/cpu-runc-10pct.csv", 300, 50
+show_file "runc, 20% CPU", "cpu-runc-20pct", "data/cpu-runc-20pct.csv", 300, 50
+show_file "runc, 50% CPU", "cpu-runc-50pct", "data/cpu-runc-50pct.csv", 300, 50
+show_file "runc, 80% CPU", "cpu-runc-80pct", "data/cpu-runc-80pct.csv", 300, 50
+show_file "runc, 100% CPU", "cpu-runc-100pct", "data/cpu-runc-100pct.csv", 8000, 500
+show_file "Kata, 100% CPU", "cpu-kata-100pct", "data/cpu-kata-100pct.csv", 8000, 500
+
+range_x 100, 1, 10, "Iterations"
+show_file "runc, 100% CPU - 100 iterations", "cpu-runc-100pct-150", "data/cpu-runc-100pct.csv", 3000, 500
+show_file "Kata, 100% CPU - 100 iterations", "cpu-kata-100pct-150", "data/cpu-kata-100pct.csv", 3000, 500
+
+
+cpu_enabled     -> 1
+memory_enabled  -> 0
+timing_enabled  -> 0
+count_enabled   -> 0
+
+key "c" ->      cpu_enabled    := 1 - cpu_enabled;      refresh 0
+key "m" ->      memory_enabled := 1 - memory_enabled;   refresh 0
+key "t" ->      timing_enabled := 1 - timing_enabled;   refresh 0
+key "n" ->      count_enabled  := 1 - count_enabled;    refresh 0
+
+
+// ============================================================================
+//
+//    Main page creation code
+//
+// ============================================================================
+
+show_file Name, Capture, File, MaxMOps, DeltaMOps ->
+// ----------------------------------------------------------------------------
+//   Show the various metrics collected in a data file
+// ----------------------------------------------------------------------------
+
+    if cpu_enabled > 0 then
+        // Create a page with CPU statistics
+        range_y MaxMOps, 1e6, DeltaMOps, "Mops"
+        show_data Name, Capture & "-cpu", File, "Work done", "plot_cpu",
+            legend "red", "Work per container"
+            legend "blue", "Work per work unit"
+
+    if memory_enabled > 0 then
+        // Create a page with memory statistics
+        range_y 80, 1024*1024, 10, "GB"
+        show_data Name, Capture & "-memory", File, "Memory utilization", "plot_memory",
+            legend "red", "Active memory"
+            legend "green", "Free memory"
+
+    if timing_enabled > 0 then
+        // Create a page with timing statistics
+        range 1000, 1, 100, "Iterations", 20000, 1, 2000, "s"
+        show_data Name, Capture & "-timing", File, "Time to scale to target", "plot_time",
+            legend "darkblue", "Delay"
+
+    if count_enabled > 0 then
+        // Create a page showing number of containers in each state
+        range_y 1000, 1, 100, "Count"
+        show_data Name, Capture & "-state",  File, "Number of containers in each state", "plot_state",
+            legend "green", "Running"
+            legend "red", "Terminating"
+            legend "orange", "Evicted"
+            legend "gray", "Creating"
+
+        // Create a page showing memory per container
+        range_y 2000, 1024, 200, "MB/u"
+        show_data Name, Capture & "-usage",  File, "Memory per container", "plot_mempc",
+            legend "purple", "MB/container"
+
+
+show_data Name, Capture, File, Subtitle, Function, Body ->
+// ----------------------------------------------------------------------------
+//   Show a particular page of metrics
+// ----------------------------------------------------------------------------
+    base_slide Name & " - " & Subtitle,
+        title Name
+        subtitle Subtitle
+
+        // Graph plotting
+        picture
+
+            // Center in lower-left and draw axes
+            translate -875, -350, 0
+            line_width 5
+            color "transparent"
+            line_color "black"
+            line_arrow   0, -50, NONE,    0, 1000, ARROWHEAD
+            line_arrow -50,   0, NONE, 1800,   0, ARROWHEAD
+            line_width 0
+
+            // Draw data scalaes (X and Y)
+            locally
+                style "story"
+                font_size 25
+                align 0.5
+                vertical_align 0.0
+                text_box 1700, -40, 250, 60,
+                    paragraph unitX & ""
+                color "gray"
+                for X in stepX..rangeX by stepX loop
+                    text_box X * scaleX, -40, 120, 60,
+                        paragraph "" & X
+                    rectangle X * scaleX, 0, 2, 10
+            locally
+                style "story"
+                font_size 25
+                align 1.0
+                vertical_align 0.5
+                text_box -40, 950, 60, 80,
+                    paragraph unitY & ""
+                color "gray"
+                for Y in stepY..rangeY by stepY loop
+                    text_box -40, Y * scaleY * dividerY, 60, 80,
+                        paragraph "" & Y
+                    rectangle 0, Y * scaleY * dividerY, 10, 2
+
+            // Load the CSV file and plot it using given function
+            load_csv File, Function
+
+        // Legend area
+        picture
+            color "gray", 40%
+            translate -600, 200, 0
+            rounded_rectangle 0, 0, 400, 300, 20
+            color "black"
+            text_box 0, 0, 350, 250,
+                vertical_align 0.3
+                style "story"
+                align 0.5
+                font_size 35
+                paragraph "Legend"
+                font_size 25
+                align 0.0
+                margins 40, 0
+                paragraph " "
+                Body
+
+        // Take a snapshot of the result as a PNG file
+        screenshot Capture & ".png"
+
+
+
+// ============================================================================
+//
+//    Data plotting code
+//
+// ============================================================================
+
+plot_cpu Iteration:real,Elapsed:real,WorkUnits:real,WorkDone:real,Running:real,Creating:real,Terminating:real,Evicted:real,TotalActive:real,TotalFree:real, Active:text,Active0:real,Active1:real,Active2:real,Active3:real,Active4:real,Free:text,Free0:real,Free1:real,Free2:real,Free3:real,Free4:real ->
+// ----------------------------------------------------------------------------
+//  Plot CPU statistics
+// ----------------------------------------------------------------------------
+    color "red"
+    circle scaleX * Iteration, scaleY * WorkDone, 5
+    color "blue", 70%
+    rectangle scaleX * WorkUnits, scaleY * WorkDone, 5, 5
+
+plot_cpu Other ->
+// ----------------------------------------------------------------------------
+//   Print out ill-formatted lines (normally only the header)
+// ----------------------------------------------------------------------------
+    writeln "Plot CPU: ", Other
+
+
+plot_memory Iteration:real,Elapsed:real,WorkUnits:real,WorkDone:real,Running:real,Creating:real,Terminating:real,Evicted:real,TotalActive:real,TotalFree:real, Active:text,Active0:real,Active1:real,Active2:real,Active3:real,Active4:real,Free:text,Free0:real,Free1:real,Free2:real,Free3:real,Free4:real ->
+// ----------------------------------------------------------------------------
+//  Plot memory statistics
+// ----------------------------------------------------------------------------
+    color "red"
+    circle scaleX * Iteration, scaleY * TotalActive, 5
+    circle scaleX * Iteration, scaleY * Active0, 2
+    circle scaleX * Iteration, scaleY * Active1, 2
+    circle scaleX * Iteration, scaleY * Active2, 2
+    circle scaleX * Iteration, scaleY * Active3, 2
+    circle scaleX * Iteration, scaleY * Active4, 2
+    color "green"
+    circle scaleX * Iteration, scaleY * TotalFree, 5
+    circle scaleX * Iteration, scaleY * Free0, 2
+    circle scaleX * Iteration, scaleY * Free1, 2
+    circle scaleX * Iteration, scaleY * Free2, 2
+    circle scaleX * Iteration, scaleY * Free3, 2
+    circle scaleX * Iteration, scaleY * Free4, 2
+
+plot_memory Other ->
+// ----------------------------------------------------------------------------
+//   Print out ill-formatted lines (normally only the header)
+// ----------------------------------------------------------------------------
+    writeln "Plot memory: ", Other
+
+
+plot_mempc Iteration:real,Elapsed:real,WorkUnits:real,WorkDone:real,Running:real,Creating:real,Terminating:real,Evicted:real,TotalActive:real,TotalFree:real, Active:text,Active0:real,Active1:real,Active2:real,Active3:real,Active4:real,Free:text,Free0:real,Free1:real,Free2:real,Free3:real,Free4:real ->
+// ----------------------------------------------------------------------------
+//  Plot memory per container
+// ----------------------------------------------------------------------------
+    color "purple"
+    circle scaleX * Iteration, scaleY * TotalActive / nonzero Running, 5
+
+    nonzero 0.0    -> 1.0
+    nonzero R:real -> R
+
+
+plot_mempc Other ->
+// ----------------------------------------------------------------------------
+//   Print out ill-formatted lines (normally only the header)
+// ----------------------------------------------------------------------------
+    writeln "Plot memory per container: ", Other
+
+
+plot_time Iteration:real,Elapsed:real,WorkUnits:real,WorkDone:real,Running:real,Creating:real,Terminating:real,Evicted:real,TotalActive:real,TotalFree:real, Active:text,Active0:real,Active1:real,Active2:real,Active3:real,Active4:real,Free:text,Free0:real,Free1:real,Free2:real,Free3:real,Free4:real ->
+// ----------------------------------------------------------------------------
+//  Plot timing statistics for launching containers
+// ----------------------------------------------------------------------------
+
+    color "darkblue"
+    circle scaleX * Iteration, scaleY * Elapsed, 5
+
+plot_time Other ->
+// ----------------------------------------------------------------------------
+//  Deal with ill-formatted lines in the CSV file (headers)
+// ----------------------------------------------------------------------------
+    writeln "Plot time:", Other
+
+
+plot_state Iteration:real,Elapsed:real,WorkUnits:real,WorkDone:real,Running:real,Creating:real,Terminating:real,Evicted:real,TotalActive:real,TotalFree:real, Active:text,Active0:real,Active1:real,Active2:real,Active3:real,Active4:real,Free:text,Free0:real,Free1:real,Free2:real,Free3:real,Free4:real ->
+// ----------------------------------------------------------------------------
+//  Plot the count of containers in each of the most interesting states
+// ----------------------------------------------------------------------------
+
+    color "green"
+    circle scaleX * Iteration, scaleY * Running, 5
+    color "red"
+    circle scaleX * Iteration, scaleY * Terminating, 5
+    color "orange"
+    circle scaleX * Iteration, scaleY * Evicted, 5
+    color "gray"
+    circle scaleX * Iteration, scaleY * Creating, 5
+
+plot_state Other ->
+// ----------------------------------------------------------------------------
+//  Deal with ill-formatted lines in the CSV file (headers)
+// ----------------------------------------------------------------------------
+    writeln "Plot state:", Other
+
+
+
+// ============================================================================
+//
+//   Utilities for dealing withh scaling of the axes
+//
+// ============================================================================
+
+// Scale used for plotting
+scaleX -> 1.0
+scaleY -> 1.0
+
+// Range in "user" units (e.g. GB)
+rangeX -> 128.0
+rangeY -> 80.0
+
+// Conversion from data to user units (e.g. bytes to GB)
+dividerX -> 1.0
+dividerY -> 1.0
+
+// Steps (un user units) for plots along the axes
+stepX -> 1.0
+stepY -> 1.0
+
+// Name of the units
+unitX -> "Workloads"
+unitY -> "GB"
+
+// Utility to easily specify the range
+range X:real, DX:real, SX:real, UX:text, Y:real, DY:real, SY:real, UY:text ->
+    range_x X, DX, SX, UX
+    range_y Y, DY, SY, UY
+
+range_x X:real, DX:real, SX:real, UX:text ->
+    rangeX := X
+    dividerX := DX
+    unitX := UX
+    stepX := SX
+    scaleX := 1600.0 / rangeX / dividerX
+
+range_y Y:real, DY:real, SY:real, UY:text ->
+    rangeY := Y
+    dividerY := DY
+    unitY := UY
+    stepY := SY
+    scaleY :=  900.0 / rangeY / dividerY
+
+// Formatting a legend
+legend Color, Descr ->
+    color "black"
+    paragraph Descr
+    anchor
+        color Color
+        circle -20, 15, 8
