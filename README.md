@@ -89,6 +89,12 @@ memory oversubscription.
 Of this total amount, 80G (5*16) can in theory be allocated to workloads. In
 practice, experience shows that we get significantly less usable memory.
 
+The tests were performed using a pre-release version of OpenShift sandboxed
+containers, using rebuilt code corresponding to various 2.0.x releases of Kata
+Containers ranging from 2.0.1 to 2.1.1. There was no significant variation
+observed between releases, except where the measurements exposed issues that
+were then fixed, in which case the numbers presented here are after the fix.
+
 
 ### Curves
 
