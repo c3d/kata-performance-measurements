@@ -1,0 +1,34 @@
+cluster: kata417
+domain: kata417.com
+# RHCOS image name in the libvirt storage pool
+#image: rhcos-410.84.202201450144-0-qemu.x86_64.qcow2
+imagecontentsources: []
+mdns: True
+# Libvirt network name eg. 192.168.10.0/24
+network: openshift-417
+# Libvirt storage pool
+pool: openshift
+api_ip: 192.168.17.254
+# Copy the pull secret and store it the following file
+pull_secret: openshift_pull.json
+# Release version number: 4.7/4.8/4.9
+tag: 4.17
+# Build type: nightly/stable. The latest nightly or stable build will be automatically downloaded
+# If specific version is required then download openshift-install from
+# https://mirror.openshift.com/pub/openshift-v4/clients and
+# place it in /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/root/bin to use the same for install
+version: stable
+disk_size: 60
+
+bootstrap_numcpus: 4
+bootstrap_memory: 16384
+
+ctlplanes: 3
+ctlplane_numcpus: 4
+ctlplane_memory: 32768
+ctlplane_macs: []
+
+workers: 4
+worker_numcpus: 8
+worker_memory: 32768
+worker_macs: []

@@ -23,6 +23,11 @@ spec:
         - name: CPU
           value: "5"
         - name: MEMORY
-          value: "500"
+          value: "1000"
         - name: INCREMENT
-          value: "256"
+          value: "100"
+#        resources:
+#          requests:
+#            memory: 2048Mi
+#          limits:
+#            memory: 4096Mi
